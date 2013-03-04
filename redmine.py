@@ -12,8 +12,8 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# along with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 # Author: Alex Lourie <djay.il@gmail.com> @alourie
 # Redmine: Copyright (C) 2006-2013  Jean-Philippe Lang
@@ -27,30 +27,32 @@ class Redmine:
 
     def __init__(self, url=None, auth=None, pass_file=None):
         self.url = url
-        self.s = requests.Session()
-        self.s.auth = auth or self.get_redmine_auth(pass_file=pass_file)
-        if not self.s.auth:
-            raise Exception("Error! No auth nor password file for redmine were given!")
-        self.s.verify = False
-        self.s.headers = {'content-type': 'application/json'}
+        self.session = requests.Session()
+        self.session.auth = auth or self.get_redmine_auth(pass_file=pass_file)
+        if not self.session.auth:
+            raise Exception(
+                "Error! No auth nor password file for redmine were given!"
+            )
+        self.session.verify = False
+        self.session.headers = {'content-type': 'application/json'}
 
-    def getProject(self, id=None, name=None):
-        if not id and not name:
+    def getProject(self, project_id=None, name=None):
+        if not project_id and not name:
             return None
 
-        if id and name:
+        if project_id and name:
             raise TypeError("Please specify id or name, not both.")
 
-        id = id or name
-        r = self.s.get(self.get_project_url(id=id))
+        project_id = project_id or name
+        r = self.session.get(self.get_project_url(project_id=project_id))
         return self.Project(r.json())
 
     def getProjects(self):
-        r = self.s.get(self.get_project_url(), data=json.dumps({'limit': 999}))
+        r = self.session.get(self.get_project_url(), data=json.dumps({'limit': 999}))
         return [self.Project(data) for data in r.json()['projects']]
 
-    def getIssue(self, id):
-        r = self.s.get(self.get_issue_url(id))
+    def getIssue(self, issue_id):
+        r = self.session.get(self.get_issue_url(issue_id))
         return self.Issue(r.json())
 
     def getIssues(self, criteria=None):
@@ -58,28 +60,28 @@ class Redmine:
             criteria.update({'limit': 100})
         elif not criteria:
             criteria = ({'limit': 100})
-        r = self.s.get(self.get_issue_url(),
+        r = self.session.get(self.get_issue_url(),
                        data=json.dumps(criteria))
         return [self.Issue(data) for data in r.json()['issues']]
 
-    def updateIssue(self, id, data):
-        r = self.s.put(self.get_issue_url(id), data=json.dumps(data))
+    def updateIssue(self, issue_id, data):
+        r = self.session.put(self.get_issue_url(issue_id), data=json.dumps(data))
         return r
 
     def createIssue(self, data):
-        r = self.s.post(self.get_issue_url(), data=json.dumps(data))
+        r = self.session.post(self.get_issue_url(), data=json.dumps(data))
         return r
 
-    def get_project_url(self, id=None):
-        if id:
-            url = self.url + "/projects/%s.json" % id
+    def get_project_url(self, project_id=None):
+        if project_id:
+            url = self.url + "/projects/%s.json" % project_id
         else:
             url = self.url + "/projects.json"
         return url
 
-    def get_issue_url(self, id=None):
-        if id:
-            url = self.url + "/issues/%s.json" % id
+    def get_issue_url(self, issue_id=None):
+        if issue_id:
+            url = self.url + "/issues/%s.json" % issue_id
         else:
             url = self.url + "/issues.json"
         return url
