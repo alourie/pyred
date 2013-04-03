@@ -126,9 +126,11 @@ class Redmine:
             return output
 
         def get_data(self):
-            ndata = self.__dict__.copy()
-            del ndata['raw_data']
-            return ndata
+            return {
+                item : value for item, value in
+                self.__dict__.iteritems() if
+                not item == 'raw_data'
+            }
 
     class Project(RedmineObj):
         def __init__(self, data):
