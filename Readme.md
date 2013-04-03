@@ -7,7 +7,7 @@ for talking and manipulating data on Redmine server.
 Installation
 ------------
 
-Just grab the pyred.py file and import it in your code.
+Just grab the redmine.py file and import it in your code.
 
 Examples
 ------------
@@ -22,10 +22,10 @@ Credits
 Contributors
 ------------
 
- Alex Lourie
- Sandro Bonazolla
+- Alex Lourie
+- Sandro Bonazolla
 
 References 
 -----------
-[1] http://redmine.org
-[2] https://github.com/kennethreitz/requests
+- [1] http://redmine.org
+- [2] https://github.com/kennethreitz/requests
