@@ -65,6 +65,10 @@ class Redmine:
         return [self.Issue(data) for data in r.json()['issues']]
 
     def updateIssue(self, issue_id, data):
+        print "Updating issue {id} with data:{data}".format(
+            id=issue_id,
+            data=data,
+        )
         r = self.session.put(self.get_issue_url(issue_id), data=json.dumps(data))
         return r
 
@@ -119,18 +123,21 @@ class Redmine:
             t = self.get_data()
             output = "Redmine %s object:\n" % self.objType
             output = output + "{\n"
-            for k in t:
-                v = t[k]
+            for k, v in t.iteritems():
                 output = output + "    '%s': '%s',\n" % (k, v)
             output = output + "}"
             return output
 
+        def __getitem__(self, item):
+            t = self.get_data()
+            if item in t:
+                return t[item]
+            return None
+
         def get_data(self):
-            return {
-                item : value for item, value in
-                self.__dict__.iteritems() if
-                not item == 'raw_data'
-            }
+            ndata = self.__dict__.copy()
+            del ndata['raw_data']
+            return ndata
 
     class Project(RedmineObj):
         def __init__(self, data):
