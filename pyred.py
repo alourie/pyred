@@ -22,7 +22,6 @@ import os
 import requests
 import json
 
-
 class Redmine:
 
     def __init__(self, url=None, auth=None, pass_file=None):
@@ -35,6 +34,47 @@ class Redmine:
             )
         self.session.verify = False
         self.session.headers = {'content-type': 'application/json'}
+
+    def get_redmine_auth(self, pass_file=None):
+        """docstring for redmine_auth"""
+        if not os.path.exists(pass_file):
+            raise OSError("Auth file %s doesn't exist." % pass_file)
+
+        username = None
+        password = None
+
+        with open(pass_file) as f:
+            for line in f.readlines():
+                if line.startswith("username"):
+                    username = line.split("=")[1].strip()
+                if line.startswith("password"):
+                    password = line.split("=")[1].strip()
+
+        if username == None or password == None:
+                raise TypeError("pass_file missing lines 'username=XX' and 'password=XX'")
+        return (username, password)
+
+    def get_project_url(self, project_id=None):
+        if project_id:
+            url = self.url + "/projects/%s.json" % project_id
+        else:
+            url = self.url + "/projects.json"
+        return url
+
+    def get_issue_url(self, issue_id=None):
+        if issue_id:
+            url = self.url + "/issues/%s.json" % issue_id
+        else:
+            url = self.url + "/issues.json"
+        return url
+
+    def get_time_entry_url(self, time_entry_id=None):
+        ''' Get http://REDMINE_HOST/time_entries/[ISSUE_ID].xml url '''
+        if time_entry_id:
+            url = self.url + "/time_entries/%s.json" % time_entry_id
+        else:
+            url = self.url + "/time_entries.json"
+        return url
 
     def getProject(self, project_id=None, name=None):
         if not project_id and not name:
@@ -55,6 +95,11 @@ class Redmine:
         r = self.session.get(self.get_issue_url(issue_id))
         return self.Issue(r.json())
 
+    def getTimeEntry(self, time_entry_id):
+        ''' Get a particular Time Entry. HTTP return code 200 ok, 404 error '''
+        r = self.session.get(self.get_time_entry_url(time_entry_id))
+        return self.TimeEntry(r.json())
+
     def getIssues(self, criteria=None):
         if criteria and not 'limit' in criteria:
             criteria.update({'limit': 100})
@@ -63,6 +108,16 @@ class Redmine:
         r = self.session.get(self.get_issue_url(),
                        data=json.dumps(criteria))
         return [self.Issue(data) for data in r.json()['issues']]
+
+    def getTimeEntries(self, criteria=None):
+        ''' Get Time Entries of a particular Issue filtered by criteria '''
+        if criteria and not 'limit' in criteria:
+            criteria.update({'limit': 100})
+        elif not criteria:
+            criteria = ({'limit': 100})
+        r = self.session.get(self.get_time_entry_url(),
+                       data=json.dumps(criteria))
+        return [self.TimeEntry(data) for data in r.json()['time_entries']]
 
     def updateIssue(self, issue_id, data):
         print "Updating issue {id} with data:{data}".format(
@@ -76,33 +131,10 @@ class Redmine:
         r = self.session.post(self.get_issue_url(), data=json.dumps(data))
         return r
 
-    def get_project_url(self, project_id=None):
-        if project_id:
-            url = self.url + "/projects/%s.json" % project_id
-        else:
-            url = self.url + "/projects.json"
-        return url
-
-    def get_issue_url(self, issue_id=None):
-        if issue_id:
-            url = self.url + "/issues/%s.json" % issue_id
-        else:
-            url = self.url + "/issues.json"
-        return url
-
-    def get_redmine_auth(self, pass_file=None):
-        """docstring for redmine_auth"""
-        if not os.path.exists(pass_file):
-            raise OSError("Auth file %s doesn't exist." % pass_file)
-
-        username = ''
-
-        with open(pass_file) as f:
-            for line in f.readlines():
-                if line.startswith("REDMINE_KEY"):
-                    username = line.split("=")[1].strip()
-
-        return (username, 'dummy')
+    def createTimeEntry(self, data):
+        ''' Creates a Time Entry attached to a given Issue or Project '''
+        r = self.session.post(self.get_time_entry_url(), data=json.dumps(data))
+        return r
 
     class RedmineObj(object):
 
@@ -146,3 +178,7 @@ class Redmine:
     class Issue(RedmineObj):
         def __init__(self, data):
             super(Redmine.Issue, self).__init__(data, 'issue')
+
+    class TimeEntry(RedmineObj):
+        def __init__(self, data):
+            super(Redmine.TimeEntry, self).__init__(data, 'time_entry')
